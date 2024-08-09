@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         { form.cad }
 // @namespace    https://github.com/ecXbe/form.cad
-// @version      0.1.7
+// @version      0.1.7.1
 // @description  Simplifies work with cadastral base
 // @author       ezX {cps};
 // @match        *://cadastru.md/ecadastru/*
