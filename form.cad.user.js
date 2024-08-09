@@ -5,6 +5,7 @@
 // @description  Simplifies work with cadastral base
 // @author       ezX {cps};
 // @match        *://cadastru.md/ecadastru/*
+// @match        *://www.cadastru.md/ecadastru/*
 // @connect      api.github.com
 // @connect      raw.githubusercontent.com
 // @icon         https://github.com/ecXbe/form.cad/blob/main/assets/logo.png?raw=true
@@ -49,7 +50,6 @@
         onload: function(response) {
 
             let $current_version = GM_info.script.version;
-            console.log($current_version);
             let $last_version = JSON.parse(response.responseText).version;
 
             let $v1 = $current_version.split(/[./]/).map(Number).filter(s => !isNaN(s));
@@ -67,8 +67,10 @@
 
             alert('Доступно новое обновление { form.cad } v'+$last_version);
             window.location.href = 'https://github.com/ecXbe/form.cad/raw/main/form.cad.user.js';
-            alert('Вы обновились. Перезагрузите страницу для применения изменений');
-            window.location.reload();
+            
+            setTimeout(function() {
+                alert('Вы обновились. Перезагрузите страницу для применения изменений');
+            }, 2000);
         }
     });
 
