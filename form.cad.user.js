@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         { form.cad }
 // @namespace    https://github.com/ecXbe/form.cad
-// @version      0.1.8
+// @version      0.1.8.1
 // @description  Simplifies work with cadastral base
 // @author       ezX {cps};
 // @match        *://cadastru.md/ecadastru/*
@@ -114,16 +114,16 @@
                         let j = 0;
                         for (let i in $versions) {
                             if (update_able($current_version, $versions[i]) === 0) {
-                                if (j == 1) {$('span.highlighting').remove();}
+                                if (j == 1) {$('span.highlighting').remove();} else {$('span.highlighting').last().remove();}
                                 break;
                             } else if ($versions[i] !== $versions[i-1]) {
-                                $('.update_list').append($('<span>', {class: 'highlighting'}));
-                                let $lastCommit = JSON.parse(response.responseText)[0].commit.message;
+                                let $lastCommit = JSON.parse(response.responseText)[i].commit.message;
                                 let $lines = $lastCommit.split('\n\n').slice(1).join('\n').split(/\r?\n/);
 
                                 for (let i = 0; i < $lines.length; i++) {
                                     $('.update_list').append($('<p>', {text: $lines[i], class: 'innovation', style: 'margin: 0.8em 0;'}))
                                 }
+                                $('.update_list').append($('<span>', {class: 'highlighting'}));
                                 j++;
                             }
                         }
