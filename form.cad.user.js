@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         { form.cad }
 // @namespace    https://github.com/ecXbe/form.cad
-// @version      0.1.7.1
+// @version      0.1.8
 // @description  Simplifies work with cadastral base
 // @author       ezX {cps};
 // @match        *://cadastru.md/ecadastru/*
@@ -44,36 +44,96 @@
 
     const db = new DataBase();
 
-    GM_xmlhttpRequest({
-        method: "GET",
-        url: 'https://raw.githubusercontent.com/ecXbe/form.cad/main/config.json',
-        onload: function(response) {
+    function check_update() {
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: 'https://raw.githubusercontent.com/ecXbe/form.cad/main/config.json',
+            onload: function(response) {
 
-            let $current_version = GM_info.script.version;
-            let $last_version = JSON.parse(response.responseText).version;
+                function update_able($current_version, $last_version) {
+                    let $v1 = $current_version.split(/[.]/).map(Number).filter(s => !isNaN(s));
+                    let $v2 = $last_version.split(/[.]/).map(Number).filter(s => !isNaN(s));
 
-            let $v1 = $current_version.split(/[./]/).map(Number).filter(s => !isNaN(s));
-            let $v2 = $last_version.split(/[./]/).map(Number).filter(s => !isNaN(s));
+                    if (JSON.stringify($v1) === JSON.stringify($v2)) return 0;
 
-            if (JSON.stringify($v1) === JSON.stringify($v2)) return
+                    let $n1,$n2;
+                    for (let i = 0; i < Math.max($v1.length, $v2.length); i++) {
+                        $n1 = $v1[i] || 0;
+                        $n2 = $v2[i] || 0;
 
-            let $n1,$n2;
-            for (let i = 0; i < Math.max($v1.length, $v2.length); i++) {
-                $n1 = $v1[i] || 0;
-                $n2 = $v2[i] || 0;
+                        if ($n1 > $n2) {return 0} else if ($n1 < $n2) {break}
+                    }
+                    return 1;
+                }
 
-                if ($n1 > $n2) {return} else if ($n1 < $n2) {break}
+                let $current_version = GM_info.script.version;
+                let $last_version = JSON.parse(response.responseText).version;
+
+                if (update_able($current_version, $last_version) === 0) return;
+
+                $('body').prepend(
+                    $('<div>', {class: 'update', style: 'display: none; position: absolute;'}).append(
+                        $('<div>', {style: '; width: 100vw; height: 100vh; justify-content: center; align-items: center; display: flex'}).append(
+                            $('<div>', {style: 'width: 500px; height: auto; min-height: 200px; max-height: 95vh; background: #ffffff; border: solid 2px black; box-shadow: 3px 3px 6px 2px rgba(0, 0, 0, 0.3); z-index: 100;'}).append(
+                                $('<div>', {class: 'update_menu', style: 'width: auto; min-width: 500px; min-height: 220px; max-height: 95vh; overflow-y: auto'}).append(
+                                    $('<h2>', {class: 'update_head', style: 'display: flex; justify-content: center', text: `Доступно обновление { form.cad }`})
+                                ).append(
+                                    $('<h3>', {style: 'display: flex; justify-content: center', text: $last_version})
+                                ).append(
+                                    $('<div>', {style: 'margin: 0 5px 0 20px'}).append(
+                                        $('<div>', {class: 'update_list', style: 'margin: 25px 0; height: auto; min-height: 48px; max-height: 75vh; overflow-y: auto'})
+                                    )
+                                ).append(
+                                    $('<div>', {class: 'update_buttons', style: 'justify-content: end; display: flex; margin: 0 20px 15px 0;'}).append(
+                                        $('<span>', {class: 'update_later', style: 'margin-right: 10px; align-items: center; display: flex; font-size: 12px; cursor: pointer;', text: 'Не сейчас'}).click(function() {$('update').remove(); $('form#wwvFlowForm').css('pointer-events', '');})
+                                    ).append(
+                                        $('<button>', {class: 'update_now', text: 'Обновить'}).click(function() {
+                                            window.location.href = 'https://github.com/ecXbe/form.cad/raw/main/form.cad.user.js'
+                                            setTimeout(function() {
+                                                $('.update_buttons, .version_update').remove();
+                                                $('.update_head').text('Вы обновились!');
+                                                $('.update_list').empty().append($('<p>', {class: 'innovation', text: 'Чтобы изменения вступили в силу, перезагрузите страницу'}));
+                                            }, 1000);
+                                        })
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+
+                GM_xmlhttpRequest({
+                    method: "GET",
+                    url: 'https://api.github.com/repos/ecXbe/form.cad/commits?path=form.cad.user.js',
+                    onload: function(response) {
+
+                        $('head').append($('<style>', {type: 'text/css', text: `.highlighting::after {content: ""; display: block; position: relative; border-bottom: 1px solid black; margin: 0 100px;}`}))
+
+                        let $current_version = GM_info.script.version;
+                        let $versions = JSON.parse(response.responseText).map(s => s.commit.message.split('\n\n')[0].replace(/([a-zA-Z\s]|(?<!\d)\.|\.(?!\d))/g, ''));
+                        let j = 0;
+                        for (let i in $versions) {
+                            if (update_able($current_version, $versions[i]) === 0) {
+                                if (j == 1) {$('span.highlighting').remove();}
+                                break;
+                            } else if ($versions[i] !== $versions[i-1]) {
+                                $('.update_list').append($('<span>', {class: 'highlighting'}));
+                                let $lastCommit = JSON.parse(response.responseText)[0].commit.message;
+                                let $lines = $lastCommit.split('\n\n').slice(1).join('\n').split(/\r?\n/);
+
+                                for (let i = 0; i < $lines.length; i++) {
+                                    $('.update_list').append($('<p>', {text: $lines[i], class: 'innovation', style: 'margin: 0.8em 0;'}))
+                                }
+                                j++;
+                            }
+                        }
+                        $('.update').css('display', '');
+                        $('form#wwvFlowForm').css('pointer-events', 'none');
+                    }
+                });
             }
-
-            alert('Доступно новое обновление { form.cad } v'+$last_version);
-            window.location.href = 'https://github.com/ecXbe/form.cad/raw/main/form.cad.user.js';
-            
-            setTimeout(function() {
-                alert('Вы обновились. Перезагрузите страницу для применения изменений');
-            }, 2000);
-        }
-    });
-
+        });
+    }
 
     let $title = $('i').eq(0);
 
@@ -338,6 +398,7 @@
 
     } else {
         db.set({status: 'offline'});
+        check_update();
         window.addEventListener('load', function() {
 
             $('head').append($('<style>', {type: 'text/css', text: `.start, .stop, .filters {margin: 10px 0 0 10px; border-radius: 6px; width: 100px; border:2px solid #000;} .acd_btn {margin-left:10px; background:#cdcdcd; padding:3px; border-radius:6px; border:2px solid #000; color:#000; cursor:pointer;} .acd_btn:hover {background: #b1b1b1;}`}))
